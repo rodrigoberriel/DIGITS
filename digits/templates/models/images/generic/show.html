@@ -132,22 +132,20 @@ updateSnapshotList({% autoescape false %}{{task.snapshot_list()}}{% endautoescap
                             </script>
                         </div>
                         {% if show_multi_gpu_form %}
-                        <div class="col-sm-4">
-                            <button
-                                formaction="{{url_for('digits.model.views.download', job_id=job.id())}}"
-                                formmethod="post"
-                                formenctype="multipart/form-data"
-                                class="btn btn-info">
-                                Download Model
-                            </button>
-                            <button
-                                formaction="{{url_for('digits.model.views.to_pretrained', job_id=job.id())}}"
-                                formmethod="post"
-                                formenctype="multipart/form-data"
-                                class="btn btn-success">
-                                Make Pretrained Model
-                            </button>
-                        </div>
+                        <button
+                            formaction="{{url_for('digits.model.views.download', job_id=job.id())}}"
+                            formmethod="post"
+                            formenctype="multipart/form-data"
+                            class="btn btn-info">
+                            Download Model
+                        </button>
+                        <button
+                            formaction="{{url_for('digits.model.views.to_pretrained', job_id=job.id())}}"
+                            formmethod="post"
+                            formenctype="multipart/form-data"
+                            class="btn btn-success">
+                            Make Pretrained Model
+                        </button>
                         {% endif %}
                     </div>
                     {% if show_multi_gpu_form %}
