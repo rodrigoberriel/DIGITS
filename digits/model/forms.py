@@ -13,6 +13,7 @@ from digits import utils
 from digits.utils import sizeof_fmt
 from digits.utils.forms import validate_required_iff
 from digits import frameworks
+from digits.webapp import scheduler
 
 
 class ModelForm(Form):
@@ -322,6 +323,8 @@ class ModelForm(Form):
         default='next',
     )
 
+
+
     # Select N of several GPUs
     select_gpus = utils.forms.SelectMultipleField(
         'Select which GPU[s] you would like to use',
@@ -337,6 +340,24 @@ class ModelForm(Form):
             ),
         ) for index in config_value('gpu_list').split(',') if index],
         tooltip="The job won't start until all of the chosen GPUs are available."
+    )
+
+    # Select 1 of several GPUs
+    select_one_of_gpus = utils.forms.SelectField(
+        'Select which GPU you would like to use',
+        choices=[('next', 'Next available')] + [(
+                     index,
+                     '#%s - %s (%s memory)' % (
+                         index,
+                         get_device(index).name,
+                         sizeof_fmt(
+                             get_nvml_info(index)['memory']['total']
+                             if get_nvml_info(index) and 'memory' in get_nvml_info(index)
+                             else get_device(index).totalGlobalMem)
+                     ),
+                 ) for index in config_value('gpu_list').split(',') if index],
+        default='next',
+        tooltip="The selected GPU must be available. DIGITS only checks availability according to its processes."
     )
 
     # XXX For testing

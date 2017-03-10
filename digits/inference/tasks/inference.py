@@ -21,7 +21,7 @@ class InferenceTask(Task):
     A task for inference jobs
     """
 
-    def __init__(self, model, images, epoch, layers, resize, **kwargs):
+    def __init__(self, model, images, epoch, layers, resize, gpu=None, **kwargs):
         """
         Arguments:
         model  -- trained model to perform inference on
@@ -40,7 +40,7 @@ class InferenceTask(Task):
         self.inference_log_file = "inference.log"
 
         # resources
-        self.gpu = None
+        self.gpu = gpu
 
         # generated data
         self.inference_data_filename = None
