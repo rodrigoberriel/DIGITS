@@ -483,7 +483,8 @@ def _fill_load_queue(filename, queue, shuffle):
                 total_lines += 1
                 try:
                     result = _parse_line(line, distribution)
-                    valid_lines += 1
+                    if os.path.isfile(result[0]):
+                        valid_lines += int(os.path.isfile(result[0]))
                     queue.put(result)
                 except ParseLineError:
                     pass
@@ -492,7 +493,8 @@ def _fill_load_queue(filename, queue, shuffle):
                 total_lines += 1
                 try:
                     result = _parse_line(line, distribution)
-                    valid_lines += 1
+                    if os.path.isfile(result[0]):
+                        valid_lines += int(os.path.isfile(result[0]))
                     queue.put(result)
                 except ParseLineError:
                     pass

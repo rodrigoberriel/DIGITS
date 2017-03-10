@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 # Copyright (c) 2016-2017, NVIDIA CORPORATION.  All rights reserved.
 
+from collections import OrderedDict
 import argparse
 import base64
 import h5py
@@ -88,6 +89,7 @@ def infer(input_list,
     n_input_samples = 0  # number of samples we were able to load
     input_ids = []       # indices of samples within file list
     input_data = []      # sample data
+    partial_outputs = []
 
     if input_is_db:
         # load images from database
@@ -118,31 +120,36 @@ def infer(input_list,
             input_data.append(img)
             n_input_samples = n_input_samples + 1
     else:
+        logger.info('Init')
+        partial = True
+        if partial:
+            logger.info('Partial inference: ON')
         # load paths from file
         paths = None
         with open(input_list) as infile:
             paths = infile.readlines()
         # load and resize images
         for idx, path in enumerate(paths):
+            if idx % 1000 == 0:
+                logger.info('Load and resize: {}/{}'.format(idx, len(paths)))
             path = path.strip()
             try:
                 image = utils.image.load_image(path.strip())
                 if resize:
-                    image = utils.image.resize_image(
-                        image,
-                        height,
-                        width,
-                        channels=channels,
-                        resize_mode=resize_mode)
+                    image = utils.image.resize_image(image, height, width, channels=channels, resize_mode=resize_mode)
                 else:
-                    image = utils.image.image_to_array(
-                        image,
-                        channels=channels)
+                    image = utils.image.image_to_array(image, channels=channels)
                 input_ids.append(idx)
                 input_data.append(image)
-                n_input_samples = n_input_samples + 1
+                n_input_samples += 1
             except utils.errors.LoadImageError as e:
                 print e
+
+            if partial and n_input_samples % (200 * utils.constants.DEFAULT_BATCH_SIZE) == 0 and n_input_samples > 0:
+                logger.info('Inference time: {}'.format(len(input_data)))
+                partial_output = infer_many_partial(model, input_data, epoch, gpu, resize)
+                input_data = []
+                partial_outputs.append(partial_output)
 
     # perform inference
     visualizations = None
@@ -160,11 +167,21 @@ def infer(input_list,
     else:
         if layers != 'none':
             raise InferenceError("Layer visualization is not supported for multiple inference")
-        outputs = model.train_task().infer_many(
-            input_data,
-            snapshot_epoch=epoch,
-            gpu=gpu,
-            resize=resize)
+
+        # inference for partial case 
+        if partial:
+            if len(input_data) > 0:
+                logger.info('Last inference...')
+                # inference on the remaining chunk of data
+                partial_output = infer_many_partial(model, input_data, epoch, gpu, resize)
+                input_data = []
+                partial_outputs.append(partial_output)
+
+            outputs = OrderedDict()
+            for name, _ in partial_outputs[0].items():
+                outputs[name] = np.concatenate([partial_output[name] for partial_output in partial_outputs])
+        else:
+            outputs = infer_many_partial(model, input_data, epoch, gpu, resize)
 
     # write to hdf5 file
     db_path = os.path.join(output_dir, 'inference.hdf5')
@@ -172,7 +189,8 @@ def infer(input_list,
 
     # write input paths and images to database
     db.create_dataset("input_ids", data=input_ids)
-    db.create_dataset("input_data", data=input_data)
+    db.create_dataset("input_data", data=[])
+    # db.create_dataset("input_data", data=input_data)
 
     # write outputs to database
     db_outputs = db.create_group("outputs")
@@ -204,6 +222,17 @@ def infer(input_list,
             dset.attrs['histogram_ticks'] = layer['data_stats']['histogram'][2]
     db.close()
     logger.info('Saved data to %s', db_path)
+
+
+def infer_many_partial(model, input_data, epoch, gpu, resize):
+    outputs = model.train_task().infer_many(
+        input_data,
+        snapshot_epoch=epoch,
+        gpu=gpu,
+        resize=resize
+    )
+    return outputs
+
 
 if __name__ == '__main__':
 
