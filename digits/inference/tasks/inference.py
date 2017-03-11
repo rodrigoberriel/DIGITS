@@ -177,7 +177,7 @@ class InferenceTask(Task):
                 reserved_resources[cpu_key] = [(resource.identifier, 1)]
                 # we reserve the first available GPU, if there are any
                 gpu_key = 'gpus'
-                if resources[gpu_key]:
+                if self.gpu is None and resources[gpu_key]:
                     for resource in resources[gpu_key]:
                         if resource.remaining() >= 1:
                             self.gpu = int(resource.identifier)

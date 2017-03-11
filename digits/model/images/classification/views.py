@@ -19,7 +19,7 @@ from digits.inference import ImageInferenceJob
 from digits.pretrained_model.job import PretrainedModelJob
 from digits.status import Status
 from digits.utils import filesystem as fs
-from digits.utils.forms import fill_form_if_cloned, save_form_to_job
+from digits.utils.forms import fill_form_if_cloned, save_form_to_job, get_selected_gpu
 from digits.utils.routing import request_wants_json, job_from_request
 from digits.webapp import scheduler
 
@@ -386,10 +386,7 @@ def classify_one():
     if 'show_visualizations' in flask.request.form and flask.request.form['show_visualizations']:
         layers = 'all'
 
-    selected_gpu = None
-    if 'select_one_of_gpus' in flask.request.form:
-        if flask.request.form['select_one_of_gpus'] != 'next':
-            selected_gpu = [str(flask.request.form['select_one_of_gpus'])]
+    selected_gpu = get_selected_gpu(flask.request.form)
 
     # create inference job
     inference_job = ImageInferenceJob(
@@ -484,12 +481,8 @@ def classify_many():
     if 'snapshot_epoch' in flask.request.form:
         epoch = float(flask.request.form['snapshot_epoch'])
 
-    selected_gpu = None
-    if 'select_one_of_gpus' in flask.request.form:
-        if flask.request.form['select_one_of_gpus'] != 'next':
-            selected_gpu = [str(flask.request.form['select_one_of_gpus'])]
-
     paths, ground_truths = read_image_list(image_list, image_folder, num_test_images)
+    selected_gpu = get_selected_gpu(flask.request.form)
 
     # create inference job
     inference_job = ImageInferenceJob(
@@ -647,11 +640,7 @@ def top_n():
         num_test_images = None
 
     paths, _ = read_image_list(image_list, image_folder, num_test_images)
-
-    selected_gpu = None
-    if 'select_one_of_gpus' in flask.request.form:
-        if flask.request.form['select_one_of_gpus'] != 'next':
-            selected_gpu = [str(flask.request.form['select_one_of_gpus'])]
+    selected_gpu = get_selected_gpu(flask.request.form)
 
     # create inference job
     inference_job = ImageInferenceJob(

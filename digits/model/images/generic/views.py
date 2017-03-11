@@ -18,7 +18,7 @@ from digits.inference import ImageInferenceJob
 from digits.status import Status
 from digits.utils import filesystem as fs
 from digits.utils import constants
-from digits.utils.forms import fill_form_if_cloned, save_form_to_job
+from digits.utils.forms import fill_form_if_cloned, save_form_to_job, get_selected_gpu
 from digits.utils.routing import request_wants_json, job_from_request
 from digits.webapp import scheduler
 
@@ -363,10 +363,7 @@ def infer_one():
     else:
         resize = True
 
-    selected_gpu = None
-    if 'select_one_of_gpus' in flask.request.form:
-        if flask.request.form['select_one_of_gpus'] != 'next':
-            selected_gpu = [str(flask.request.form['select_one_of_gpus'])]
+    selected_gpu = get_selected_gpu(flask.request.form)
 
     # create inference job
     inference_job = ImageInferenceJob(
@@ -454,10 +451,7 @@ def infer_extension():
         if 'show_visualizations' in flask.request.form and flask.request.form['show_visualizations']:
             layers = 'all'
 
-        selected_gpu = None
-        if 'select_one_of_gpus' in flask.request.form:
-            if flask.request.form['select_one_of_gpus'] != 'next':
-                selected_gpu = [str(flask.request.form['select_one_of_gpus'])]
+        selected_gpu = get_selected_gpu(flask.request.form)
 
         # create inference job
         inference_job = ImageInferenceJob(
@@ -552,11 +546,8 @@ def infer_db():
         resize = False
     else:
         resize = True
-
-    selected_gpu = None
-    if 'select_one_of_gpus' in flask.request.form:
-        if flask.request.form['select_one_of_gpus'] != 'next':
-            selected_gpu = [str(flask.request.form['select_one_of_gpus'])]
+    
+    selected_gpu = get_selected_gpu(flask.request.form)
 
     # create inference job
     inference_job = ImageInferenceJob(
@@ -653,10 +644,7 @@ def infer_many():
     else:
         resize = True
 
-    selected_gpu = None
-    if 'select_one_of_gpus' in flask.request.form:
-        if flask.request.form['select_one_of_gpus'] != 'next':
-            selected_gpu = [str(flask.request.form['select_one_of_gpus'])]
+    selected_gpu = get_selected_gpu(flask.request.form)
 
     paths = []
 
